@@ -18,14 +18,29 @@ $api.interceptors.request.use((config) => {
   return config;
 });
 
+app.get("/getLeads", async (req, res) => {
+  const leads = (await $api.get("/api/v4/leads")).data._embedded.leads;
+  const pipelines = (await $api.get("/api/v4/leads/pipelines")).data._embedded.pipelines;
+  const users = (await $api.get("/api/v4/users")).data._embedded.users;
+  const leadsLocal = [];
+  for (let i = 0; i < leads.length; i++) {
+    let lead = {};
+    lead.id = leads[i].id;
+    lead.name = leads[i].name;
+    lead.group_id = leads[i].group_id;
+    lead.price = leads[i].price;
+    lead.status = pipelines.find((pipeline) => pipeline.id === leads[i].pipeline_id)._embedded.statuses.find((status) => status.id === leads[i].status_id).name;
+    lead.responsible_user = {
+      id: users.find((user) => user.id === leads[i].responsible_user_id).id,
+      name: users.find((user) => user.id === leads[i].responsible_user_id).name,
+      email: users.find((user) => user.id === leads[i].responsible_user_id).email
+    },
+      lead.pipline = {
+        id: pipelines.find((pipeline) => pipeline.id === leads[i].pipeline_id).id,
+        name: pipelines.find((pipeline) => pipeline.id === leads[i].pipeline_id).name
+      };
 
-
-
-app.get("/", async (req, res) => {
-  const leads = (await $api.get("/api/v4/leads")).data;
-  const statuses = (await $api.get("/api/v4/leads/pipelines")).data;
-  const users = (await $api.get("/api/v4/users")).data;
-  console.log('hi'
-  );
-  res.json([leads._embedded.leads, statuses._embedded.pipelines, users._embedded.users]);
+    leadsLocal.push(lead);
+  }
+  res.json([leadsLocal, leads]);
 })
